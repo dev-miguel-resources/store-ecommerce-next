@@ -2,6 +2,7 @@ import User from "@/lib/models/User";
 import { connectToDB } from "@/lib/mongoDB";
 
 import { auth } from "@clerk/nextjs";
+//import { revalidatePath } from "next/cache"; -> optimizada para CSR desde un contexto propio
 import { NextRequest, NextResponse } from "next/server";
 
 export const POST = async (req: NextRequest) => {
@@ -23,7 +24,7 @@ export const POST = async (req: NextRequest) => {
     const { productId } = await req.json();
 
     if (!productId) {
-      return new NextResponse("Product is required", { status: 400 });
+      return new NextResponse("Product Id required", { status: 400 });
     }
 
     const isLiked = user.wishlist.includes(productId);
@@ -32,15 +33,17 @@ export const POST = async (req: NextRequest) => {
       // Dislike
       user.wishlist = user.wishlist.filter((id: string) => id !== productId);
     } else {
-      // LIKE
+      // Like
       user.wishlist.push(productId);
     }
 
     await user.save();
 
-    return new NextResponse(user, { status: 200 });
+    return NextResponse.json(user, { status: 200 });
   } catch (err) {
     console.log("[wishlist_POST]", err);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 };
+
+// force-dynamic -> optimizado para SSR

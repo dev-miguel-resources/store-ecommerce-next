@@ -7,10 +7,10 @@ import { useRouter } from 'next/navigation'
 
 interface HeartFavoriteProps {
   product: ProductType
-  // agregar otra prop para más adelante
+  updateSignedInUser?: (updatedUser: UserType) => void
 }
 
-const HeartFavorite = ({ product }: HeartFavoriteProps) => {
+const HeartFavorite = ({ product, updateSignedInUser }: HeartFavoriteProps) => {
   const router = useRouter()
   const { user } = useUser()
 
@@ -18,7 +18,15 @@ const HeartFavorite = ({ product }: HeartFavoriteProps) => {
   const [isLiked, setIsLiked] = useState(false)
 
   const getUser = async () => {
-    // pendiente
+    try {
+      setLoading(true)
+      const res = await fetch('/api/users')
+      const data = await res.json()
+      setIsLiked(data.wishlist.includes(product._id))
+      setLoading(false)
+    } catch (err) {
+      console.log('[users_GET]', err)
+    }
   }
 
   const handleLike = async (
@@ -29,14 +37,25 @@ const HeartFavorite = ({ product }: HeartFavoriteProps) => {
       if (!user) {
         router.push('/sign-in')
         return
+      } else {
+        const res = await fetch('/api/users/wishlist', {
+          method: 'POST',
+          body: JSON.stringify({ productId: product._id }),
+        })
+        const updatedUser = await res.json()
+        setIsLiked(updatedUser.wishlist.includes(product._id))
+        updateSignedInUser && updateSignedInUser(updatedUser)
       }
-      // pendiente de completar
     } catch (err) {
       console.log('[wishlist_POST]', err)
     }
   }
 
-  useEffect(() => {}, []) // pendiente
+  useEffect(() => {
+    if (user) {
+      getUser()
+    }
+  }, [user])
 
   return (
     <button onClick={handleLike}>
